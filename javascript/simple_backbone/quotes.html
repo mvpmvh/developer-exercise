@@ -8,5 +8,133 @@
 </head>
 <body>
 
+  <input id="filter" placeholder="Filter by Quote" type="text" autofocus=""><br>
+  <input id="includeMovies" type="checkbox" name="movies" checked>Movie Quotes<br>
+  <input id="includeGames" type="checkbox" name="games" checked>Game Quotes<br>
+  <div id="quotesTable"></div>
+  
+  <script type="text/template" id="quote-table-template">
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Context</th>
+          <th>Quote</th>
+          <th>Theme</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% _.each(quotes, function(quote) { %>  
+          <tr>
+            <td><%= quote.source %></td>
+            <td><%= quote.context %></td>
+            <td><%= quote.quote %></td>
+            <td><%= quote.theme %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </script>
+    
+  <script>
+    $(function(){
+      var Quote = Backbone.Model.extend({
+        defaults: function() {
+          return {
+            source: "",
+            context: "",
+            quote: "",
+            theme: ""
+          };
+        }
+      });
+      
+      var QuotesCollection = Backbone.Collection.extend({
+        model: Quote
+      });
+      
+      var QuotesTableView = Backbone.View.extend({
+        el: $("#quotesTable"),
+        
+        template: _.template($('#quote-table-template').html()),
+        
+        initialize: function() {
+          if (!this.collection) {
+            console.warn("No collection provided.");
+            return;
+          }
+          
+          this.listenTo(this.collection, "reset add remove change", this.render);
+          this.render();
+        },
+        
+        render: function() {
+          this.$el.html(this.template({quotes: this.collection.toJSON()}));          
+          return this;
+        }
+      });
+      
+      var filteredCollection = function(original, filterMap) {
+        var filtered = new original.constructor();
+        
+        _.each(filterMap, function(val, key) {
+          filtered[key] = val;
+        });
+
+        filtered.reset(original.models);
+        
+        return filtered; 
+      }
+      
+      var quotes = new QuotesCollection([{"source":"The Wolf","context":"Pulp Fiction","quote":"That's thirty minutes away. I'll be there in ten.","theme":"movies"}]);
+      
+      var filteredQuotes = filteredCollection(quotes, {
+        filterByQuote: function(quoteFilter, includeMovies, includeGames) {
+          var filteredItems = quotes.models;
+          
+          if (quoteFilter.length) {
+            filteredItems = _.filter(quotes.models, function(quote) {
+              return quote.get("quote").includes(quoteFilter);
+            });  
+          }
+          
+          if (!includeMovies) {
+            filteredItems = _.filter(filteredItems, function(quote) {
+              return quote.get("theme") !== "movies"
+            }); 
+          }
+          
+          if (!includeGames) {
+            filteredItems = _.filter(filteredItems, function(quote) {
+              return quote.get("theme") !== "games"
+            });
+          }
+                    
+          this.reset(filteredItems);
+        }
+      });
+      
+      var quotesTable = new QuotesTableView({collection: filteredQuotes});
+      
+      var filterQuotes = function() {
+        var filter = $("#filter").val();
+        var includeMovies = $("#includeMovies").prop("checked");
+        var includeGames = $("#includeGames").prop("checked");
+        filteredQuotes.filterByQuote(filter, includeMovies, includeGames);
+      }
+      
+      $("#filter").on("keyup", function() {
+        filterQuotes();
+      });
+      
+      $("#includeMovies").on("change", function() {
+        filterQuotes();
+      });
+      
+      $("#includeGames").on("change", function() {
+        filterQuotes();
+      });
+    });
+  </script>
 </body>
 </html>
