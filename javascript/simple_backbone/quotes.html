@@ -13,6 +13,13 @@
   <input id="includeGames" type="checkbox" name="games" checked>Game Quotes<br>
   <div id="quotesTable"></div>
   
+  <script type="text/template" id="paginated-table-template">
+    <p>Page <%= currentPage %> of <%= totalPages %></p>
+    <button id="prevButton">&lt;</button>
+    <button id="nextButton">&gt;</button>
+    <%= table %>
+  </script>
+
   <script type="text/template" id="quote-table-template">
     <table>
       <thead>
@@ -48,14 +55,108 @@
           };
         }
       });
-      
-      var QuotesCollection = Backbone.Collection.extend({
-        model: Quote
+
+      var PaginatedCollection = Backbone.Collection.extend({
+        initialize: function() {
+          this._page = 1;
+          
+          if (!this.perPage) {
+            this.perPage = 10;
+          }
+
+          this.listenTo(this, "reset add", this._onCollectionChanged)
+        },
+
+        _onCollectionChanged: function() {
+          this._totalPages = Math.ceil(this.models.length / this.perPage);
+        },
+
+        next: function() {
+          if (this._page >= this._totalPages) {
+            return;
+          }
+
+          var nextPage = _.rest(this.models, this.perPage * this._page);
+          nextPage = _.first(nextPage, this.perPage);    
+          this._page = this._page + 1;
+
+          return nextPage;
+        },
+
+        previous: function() {
+          if (this._page === 1) {
+            return;
+          }
+
+          this._page = this._page - 1;
+          var prevPage = _.rest(this.models, this.perPage * (this._page -1));
+          prevPage = _.first(prevPage, this.perPage);
+
+          return prevPage;
+        }
+      });
+
+      var PaginatedTableView = Backbone.View.extend({
+        template: _.template($('#paginated-table-template').html()),
+
+        events: {
+          "click #prevButton": "_onPrevious",
+          "click #nextButton": "_onNext"
+        },
+
+        initialize: function(options) {
+          if (!this.collection) {
+            console.error("collection not set");
+            return;
+          }
+
+          if (!options.tableView) {
+            console.error("tableView not set");
+            return;
+          }
+          
+          this._renderedCollection = new this.collection.constructor();
+          this.listenTo(this.collection, "reset add remove", this._onSourceChanged);
+          this.listenTo(this._renderedCollection, "reset", this.render);
+          this._table = new options.tableView({collection: this._renderedCollection});
+          this._table.stopListening(); //I will manually invoke render() instead
+          this._renderedCollection.reset(this.collection.models);
+        },
+
+        render: function() {
+          var currentPage = this.collection._page;
+          var totalPages = this.collection._totalPages;
+          var table = this._table.render().$el.html();
+
+          this.$el.html(this.template(
+            {
+              currentPage: currentPage, 
+              totalPages: totalPages,
+              table: table
+            })
+          ); 
+        },
+
+        _onSourceChanged: function() {
+          this._renderedCollection.reset(this.collection.models);
+        },
+
+        _onPrevious: function() {
+          var previous = this.collection.previous();
+          if (previous) {
+            this._renderedCollection.reset(previous);
+          }
+        },
+
+        _onNext: function() {
+          var next = this.collection.next();
+          if (next) {
+            this._renderedCollection.reset(next);
+          }
+        }
       });
       
       var QuotesTableView = Backbone.View.extend({
-        el: $("#quotesTable"),
-        
         template: _.template($('#quote-table-template').html()),
         
         initialize: function() {
@@ -64,8 +165,7 @@
             return;
           }
           
-          this.listenTo(this.collection, "reset add remove change", this.render);
-          this.render();
+          this.listenTo(this.collection, "reset add remove", this.render);
         },
         
         render: function() {
@@ -86,8 +186,8 @@
         return filtered; 
       }
       
-      var quotes = new QuotesCollection([{"source":"The Wolf","context":"Pulp Fiction","quote":"That's thirty minutes away. I'll be there in ten.","theme":"movies"}]);
-      
+      var quotes = new PaginatedCollection([{"source":"The Wolf","context":"Pulp Fiction","quote":"That's thirty minutes away. I'll be there in ten.","theme":"movies"}], {model: Quote});
+    
       var filteredQuotes = filteredCollection(quotes, {
         filterByQuote: function(quoteFilter, includeMovies, includeGames) {
           var filteredItems = quotes.models;
@@ -114,7 +214,14 @@
         }
       });
       
-      var quotesTable = new QuotesTableView({collection: filteredQuotes});
+      var $table = $("#quotesTable");
+      var paginatedTable = new PaginatedTableView(
+        {
+          el: $table, 
+          collection: filteredQuotes, 
+          tableView: QuotesTableView
+        }
+      );
       
       var filterQuotes = function() {
         var filter = $("#filter").val();
