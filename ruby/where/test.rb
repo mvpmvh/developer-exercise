@@ -1,4 +1,5 @@
 require 'minitest/autorun'
+require_relative './core_extensions/enumerable/where'
 
 class WhereTest < Minitest::Test
   def setup
@@ -8,10 +9,12 @@ class WhereTest < Minitest::Test
     @glen    = {:name => 'Glengarry Glen Ross', :quote => "Put. That coffee. Down. Coffee is for closers only.",  :title => "Blake", :rank => 5}
 
     @fixtures = [@boris, @charles, @wolf, @glen]
+
+    Array.include CoreExtensions::Enumerable::Where
   end
 
   def test_where_with_exact_match
-    assert_equal [@wolf], @fixtures.where(:name => 'The Wolf'),
+    assert_equal [@wolf], @fixtures.where(:name => 'The Wolf')
   end
 
   def test_where_with_partial_match
@@ -28,6 +31,16 @@ class WhereTest < Minitest::Test
 
   def test_with_chain_calls
     assert_equal [@charles], @fixtures.where(:quote => /if/i).where(:rank => 3)
+  end
+
+  def test_with_block
+    assert_equal [@boris, @wolf], @fixtures.where { |value| value[:rank] == 4 }
+  end
+
+  def test_nil_criteria_raises_error
+    assert_raises ArgumentError do
+      @fixtures.where
+    end
   end
 end
 
