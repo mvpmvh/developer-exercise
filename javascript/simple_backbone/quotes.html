@@ -1,247 +1,276 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-                    "http://www.w3.org/TR/html4/loose.dtd">
+"http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<head>
-  <script src="http://code.jquery.com/jquery-latest.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
-</head>
-<body>
+  <head>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+  </head>
+  <body>
 
-  <input id="filter" placeholder="Filter by Quote" type="text" autofocus=""><br>
-  <input id="includeMovies" type="checkbox" name="movies" checked>Movie Quotes<br>
-  <input id="includeGames" type="checkbox" name="games" checked>Game Quotes<br>
-  <div id="quotesTable"></div>
-  
-  <script type="text/template" id="paginated-table-template">
-    <p>Page <%= currentPage %> of <%= totalPages %></p>
-    <button id="prevButton">&lt;</button>
-    <button id="nextButton">&gt;</button>
-    <%= table %>
-  </script>
+    <input id="filter" placeholder="Filter by Quote" type="text" autofocus=""><br>
+    <input id="includeMovies" type="checkbox" name="movies" checked>Movie Quotes<br>
+    <input id="includeGames" type="checkbox" name="games" checked>Game Quotes<br>
+    <div id="quotesTable"></div>
 
-  <script type="text/template" id="quote-table-template">
-    <table>
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Context</th>
-          <th>Quote</th>
-          <th>Theme</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% _.each(quotes, function(quote) { %>  
+    <script type="text/template" id="paginated-table-template">
+      <% if (totalPages > 0) { %>
+        <p>Page <%= currentPage %> of <%= totalPages %></p>
+      <% } else { %>
+        <p>No Results</p>
+      <% } %>
+
+      <button id="prevButton">&lt;</button>
+      <button id="nextButton">&gt;</button>
+
+      <%= table %>
+    </script>
+
+    <script type="text/template" id="quote-table-template">
+      <table>
+        <thead>
           <tr>
-            <td><%= quote.source %></td>
-            <td><%= quote.context %></td>
-            <td><%= quote.quote %></td>
-            <td><%= quote.theme %></td>
+            <th>Source</th>
+            <th>Context</th>
+            <th>Quote</th>
+            <th>Theme</th>
           </tr>
-        <% }); %>
-      </tbody>
-    </table>
-  </script>
-    
-  <script>
-    $(function(){
-      var Quote = Backbone.Model.extend({
-        defaults: function() {
-          return {
-            source: "",
-            context: "",
-            quote: "",
-            theme: ""
-          };
-        }
-      });
+        </thead>
+        <tbody>
+          <% _.each(quotes, function(quote) { %>  
+            <tr>
+              <td><%= quote.source %></td>
+              <td><%= quote.context %></td>
+              <td><%= quote.quote %></td>
+              <td><%= quote.theme %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </script>
 
-      var PaginatedCollection = Backbone.Collection.extend({
-        initialize: function() {
-          this._page = 1;
-          
-          if (!this.perPage) {
-            this.perPage = 10;
+    <script>
+      $(function(){
+        var Quote = Backbone.Model.extend({
+          defaults: function() {
+            return {
+              source: "",
+              context: "",
+              quote: "",
+              theme: ""
+            };
           }
-
-          this.listenTo(this, "reset add", this._onCollectionChanged)
-        },
-
-        _onCollectionChanged: function() {
-          this._totalPages = Math.ceil(this.models.length / this.perPage);
-        },
-
-        next: function() {
-          if (this._page >= this._totalPages) {
-            return;
-          }
-
-          var nextPage = _.rest(this.models, this.perPage * this._page);
-          nextPage = _.first(nextPage, this.perPage);    
-          this._page = this._page + 1;
-
-          return nextPage;
-        },
-
-        previous: function() {
-          if (this._page === 1) {
-            return;
-          }
-
-          this._page = this._page - 1;
-          var prevPage = _.rest(this.models, this.perPage * (this._page -1));
-          prevPage = _.first(prevPage, this.perPage);
-
-          return prevPage;
-        }
-      });
-
-      var PaginatedTableView = Backbone.View.extend({
-        template: _.template($('#paginated-table-template').html()),
-
-        events: {
-          "click #prevButton": "_onPrevious",
-          "click #nextButton": "_onNext"
-        },
-
-        initialize: function(options) {
-          if (!this.collection) {
-            console.error("collection not set");
-            return;
-          }
-
-          if (!options.tableView) {
-            console.error("tableView not set");
-            return;
-          }
-          
-          this._renderedCollection = new this.collection.constructor();
-          this.listenTo(this.collection, "reset add remove", this._onSourceChanged);
-          this.listenTo(this._renderedCollection, "reset", this.render);
-          this._table = new options.tableView({collection: this._renderedCollection});
-          this._table.stopListening(); //I will manually invoke render() instead
-          this._renderedCollection.reset(this.collection.models);
-        },
-
-        render: function() {
-          var currentPage = this.collection._page;
-          var totalPages = this.collection._totalPages;
-          var table = this._table.render().$el.html();
-
-          this.$el.html(this.template(
-            {
-              currentPage: currentPage, 
-              totalPages: totalPages,
-              table: table
-            })
-          ); 
-        },
-
-        _onSourceChanged: function() {
-          this._renderedCollection.reset(this.collection.models);
-        },
-
-        _onPrevious: function() {
-          var previous = this.collection.previous();
-          if (previous) {
-            this._renderedCollection.reset(previous);
-          }
-        },
-
-        _onNext: function() {
-          var next = this.collection.next();
-          if (next) {
-            this._renderedCollection.reset(next);
-          }
-        }
-      });
-      
-      var QuotesTableView = Backbone.View.extend({
-        template: _.template($('#quote-table-template').html()),
-        
-        initialize: function() {
-          if (!this.collection) {
-            console.warn("No collection provided.");
-            return;
-          }
-          
-          this.listenTo(this.collection, "reset add remove", this.render);
-        },
-        
-        render: function() {
-          this.$el.html(this.template({quotes: this.collection.toJSON()}));          
-          return this;
-        }
-      });
-      
-      var filteredCollection = function(original, filterMap) {
-        var filtered = new original.constructor();
-        
-        _.each(filterMap, function(val, key) {
-          filtered[key] = val;
         });
 
-        filtered.reset(original.models);
-        
-        return filtered; 
-      }
-      
-      var quotes = new PaginatedCollection([{"source":"The Wolf","context":"Pulp Fiction","quote":"That's thirty minutes away. I'll be there in ten.","theme":"movies"}], {model: Quote});
-    
-      var filteredQuotes = filteredCollection(quotes, {
-        filterByQuote: function(quoteFilter, includeMovies, includeGames) {
-          var filteredItems = quotes.models;
-          
-          if (quoteFilter.length) {
-            filteredItems = _.filter(quotes.models, function(quote) {
+        var QuotesCollection = Backbone.Collection.extend({
+          url: "https://gist.githubusercontent.com/anonymous/8f61a8733ed7fa41c4ea/raw/1e90fd2741bb6310582e3822f59927eb535f6c73/quotes.json",
+          model: Quote
+        });
+
+        var FilteredCollection = Backbone.Collection.extend({
+          initialize: function(options) {
+            if (!options.collection) {
+              console.error("collection option not set");
+              return;
+            }
+
+            if (!options.filter) {
+              console.error("filter option not set");
+              return;
+            }
+
+            this._sourceCollection = options.collection;
+            this._filter = options.filter;
+            this.listenTo(this._sourceCollection, "reset add", this._onSourceChanged);
+          },
+
+          filter: function() {
+            this._cachedArgs = arguments;
+            this._filter.apply(this, this._cachedArgs);
+          },
+
+          _onSourceChanged: function() {
+            // in case the underlying source changes, re-filter new collection w/ previous filter
+            this.filter.apply(this, this._cachedArgs);
+          }
+        });
+
+        var PaginatedCollection = Backbone.Collection.extend({
+          initialize: function(options) {
+            if (!options.collection) {
+              console.error("collection option not set");
+              return;
+            }
+
+            this._page = 1;
+
+            if (!this.perPage) {
+              this.perPage = 15;
+            }
+
+            this._sourceCollection = option.collection;
+            this.listenTo(this._sourceCollection, "reset add", this._onSourceChanged);         
+          },
+
+          _onSourceChanged: function() {
+            this._totalPages = Math.ceil(this._sourceCollection.models.length / this.perPage);
+            this._page = 1;
+            var rendered = _.first(this._sourceCollection.models, this.perPage);
+            this.reset(rendered);
+          },
+
+          next: function() {
+            if (this._page >= this._totalPages) {
+              return;
+            }
+
+            var nextPage = _.rest(this._sourceCollection.models, this.perPage * this._page);
+            nextPage = _.first(nextPage, this.perPage);    
+            this._page = this._page + 1;
+            this.reset(nextPage);
+          },
+
+          previous: function() {
+            if (this._page === 1) {
+              return;
+            }
+
+            this._page = this._page - 1;
+            var prevPage = _.rest(this._sourceCollection.models, this.perPage * (this._page -1));
+            prevPage = _.first(prevPage, this.perPage);
+            this.reset(prevPage);
+          }
+        });
+
+        var PaginatedTableView = Backbone.View.extend({
+          template: _.template($('#paginated-table-template').html()),
+
+          events: {
+            "click #prevButton": "_onPrevious",
+            "click #nextButton": "_onNext"
+          },
+
+          initialize: function(options) {
+            if (!this.collection) {
+              console.error("collection not set");
+              return;
+            }
+
+            if (!options.tableView) {
+              console.error("tableView not set");
+              return;
+            }
+
+            this.listenTo(this.collection, "reset add", this.render);
+            this._table = new options.tableView({collection: this.collection});
+            this._table.stopListening(); //I will manually invoke render() instead
+          },
+
+          render: function() {
+            var currentPage = this.collection._page;
+            var totalPages = this.collection._totalPages;
+            var table = this._table.render().$el.html();
+
+            this.$el.html(this.template(
+              {
+                currentPage: currentPage, 
+                totalPages: totalPages,
+                table: table
+              })
+            ); 
+          },
+
+          _onPrevious: function() {
+            this.collection.previous();
+          },
+
+          _onNext: function() {
+            this.collection.next();
+          }
+        });
+
+        var QuotesTableView = Backbone.View.extend({
+          template: _.template($('#quote-table-template').html()),
+
+          initialize: function() {
+            if (!this.collection) {
+              console.warn("No collection provided.");
+              return;
+            }
+
+            this.listenTo(this.collection, "reset add", this.render);
+          },
+
+          render: function() {
+            this.$el.html(this.template({quotes: this.collection.toJSON()}));          
+            return this;
+          }
+        });
+
+        /* Filters a collection by quote string
+         * @string quoteFilter
+         * @boolean includeMovies
+         * @boolean includeGames
+         * 
+         * These parameters may be undefined if being invoked for the first time from an empty cache.
+         */
+        var filterByQuote = function(quoteFilter, includeMovies, includeGames) {
+          var filteredItems = this._sourceCollection.models;
+
+          if (typeof(quoteFilter) !== "undefined" && quoteFilter.length) {
+            filteredItems = _.filter(filteredItems, function(quote) {
               return quote.get("quote").includes(quoteFilter);
             });  
           }
-          
-          if (!includeMovies) {
+
+          if (typeof(includeMovies) !== "undefined" && !includeMovies) {
             filteredItems = _.filter(filteredItems, function(quote) {
               return quote.get("theme") !== "movies"
             }); 
           }
-          
-          if (!includeGames) {
+
+          if (ypeof(includeMovies) !== "undefined" && !includeGames) {
             filteredItems = _.filter(filteredItems, function(quote) {
               return quote.get("theme") !== "games"
             });
           }
-                    
+
           this.reset(filteredItems);
         }
-      });
-      
-      var $table = $("#quotesTable");
-      var paginatedTable = new PaginatedTableView(
-        {
-          el: $table, 
-          collection: filteredQuotes, 
-          tableView: QuotesTableView
+
+        var quotes = new QuotesCollection();
+        var filteredQuotes = new FilteredCollection({collection: quotes, filter: filterByQuote});
+        var paginatedQuotes = new PaginatedCollection({collection: filteredQuotes});
+        var $table = $("#quotesTable");
+        var paginatedTable = new PaginatedTableView(
+          {
+            el: $table, 
+            collection: paginatedQuotes, 
+            tableView: QuotesTableView
+          }
+        );
+
+        var filterQuotes = function() {
+          var filter = $("#filter").val();
+          var includeMovies = $("#includeMovies").prop("checked");
+          var includeGames = $("#includeGames").prop("checked");
+          filteredQuotes.filterByQuote(filter, includeMovies, includeGames);
         }
-      );
-      
-      var filterQuotes = function() {
-        var filter = $("#filter").val();
-        var includeMovies = $("#includeMovies").prop("checked");
-        var includeGames = $("#includeGames").prop("checked");
-        filteredQuotes.filterByQuote(filter, includeMovies, includeGames);
-      }
-      
-      $("#filter").on("keyup", function() {
-        filterQuotes();
+
+        $("#filter").on("keyup", function() {
+          filterQuotes();
+        });
+
+        $("#includeMovies").on("change", function() {
+          filterQuotes();
+        });
+
+        $("#includeGames").on("change", function() {
+          filterQuotes();
+        });
+
+        quotes.fetch();
       });
-      
-      $("#includeMovies").on("change", function() {
-        filterQuotes();
-      });
-      
-      $("#includeGames").on("change", function() {
-        filterQuotes();
-      });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
