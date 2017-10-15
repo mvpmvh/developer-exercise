@@ -24,6 +24,10 @@ class Deck
       @cards.empty?
     end
 
+    def size
+      @cards.size
+    end
+
     def +(other)
       combined = Deck.new
       combined.cards.clear

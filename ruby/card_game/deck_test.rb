@@ -39,6 +39,10 @@ class DeckTest < Minitest::Test
       refute @deck.empty?
     end
 
+    def test_size_returns_correct_size
+      assert_equal 52, @deck.size
+    end
+
     def test_adding_another_deck_combines_all_cards
       second_deck = Deck.new
       combined_deck = @deck + second_deck
