@@ -1,4 +1,4 @@
-require './blackjack'
+require_relative './blackjack'
 require 'minitest/autorun'
 
 class BlackJackTest < Minitest::Test
