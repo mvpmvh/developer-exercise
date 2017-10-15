@@ -1,4 +1,3 @@
-require_relative './hand'
 require_relative './has_hands'
 
 module CardGame
