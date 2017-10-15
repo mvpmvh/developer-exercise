@@ -1,3 +1,5 @@
+require_relative './hand'
+
 module CardGame
   module HasHands    
     def hand
