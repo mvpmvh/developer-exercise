@@ -1,9 +1,9 @@
 require_relative '../dealer'
-require_relative '../has_hands'
+require_relative './blackjack_logic'
 
 module Blackjack
   class Dealer < CardGame::Dealer
-    include CardGame::HasHands
+    include BlackjackLogic
 
     def initialize(hand = CardGame::Hand.new)
       @hand = hand

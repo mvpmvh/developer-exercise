@@ -24,5 +24,30 @@ module Blackjack
 
       assert_equal 2, @dealer.hand.size
     end
+
+    def test_has_blackjack_true_when_player_has_blackjack
+      card1 = CardGame::Card.new(:hearts, :ace)
+      card2 = CardGame::Card.new(:hearts, :ten)
+      @dealer.add_to_hand(card1, card2)
+      
+      assert @dealer.has_blackjack?
+    end
+
+    def test_has_blackjack_false_when_player_does_not_have_blackjack
+      card1 = CardGame::Card.new(:hearts, :king)
+      card2 = CardGame::Card.new(:hearts, :ten)
+      @dealer.add_to_hand(card1, card2)
+      
+      refute @dealer.has_blackjack?
+    end
+
+    def test_21_is_not_blackjack
+      card1 = CardGame::Card.new(:hearts, :four)
+      card2 = CardGame::Card.new(:hearts, :ten)
+      card3 = CardGame::Card.new(:hearts, :seven)
+      @dealer.add_to_hand(card1, card2, card3)
+      
+      refute @dealer.has_blackjack?
+    end
   end
 end
