@@ -1,8 +1,7 @@
-require_relative './dealer'
-require 'minitest/autorun'
+require 'test_helper'
 
 module CardGame
-  class DealerTest < Minitest::Test
+  class TestDealer < Minitest::Test
     def setup
       @dealer = Dealer.new
     end
@@ -28,7 +27,7 @@ module CardGame
     end
 
     def test_deal_raises_error_when_out_of_cards
-      assert_raises OutOfCardsError do 
+      assert_raises CardGame::Error::OutOfCardsError do 
         deck = @dealer.deal!(53)
       end
     end

@@ -1,6 +1,4 @@
-require_relative './hand'
-require_relative './card'
-require 'minitest/autorun'
+require 'test_helper'
 
 module CardGame
   class HandTest < Minitest::Test
@@ -38,6 +36,30 @@ module CardGame
       @hand.add_cards(card1, card2)
 
       assert_equal 2, @hand.size
+    end
+
+    def test_equal_hands_true
+      card1 = Card.new(:hearts, :ace)
+      card2 = Card.new(:spades, :ace) 
+      hand1 = Hand.new(card1, card2)
+      
+      card3 = Card.new(:hearts, :ace)
+      card4 = Card.new(:spades, :ace)
+      hand2 = Hand.new(card3, card4)
+
+      assert_equal hand1, hand2
+    end
+
+    def test_unequal_hands_false
+      card1 = Card.new(:hearts, :ace)
+      card2 = Card.new(:spades, :ace) 
+      hand1 = Hand.new(card1, card2)
+      
+      card3 = Card.new(:clubs, :ace)
+      card4 = Card.new(:spades, :ace)
+      hand2 = Hand.new(card3, card4)
+
+      refute_equal hand1, hand2
     end
   end
 end

@@ -1,12 +1,9 @@
-require_relative './player'
-require_relative './hand'
-require_relative './card'
-require 'minitest/autorun'
+require 'test_helper'
 
 module CardGame
   class PlayerTest < Minitest::Test
     def setup
-      @player = Player.new
+      @player = Player.new("test player")
     end
 
     def test_new_player_has_empty_hand
@@ -14,8 +11,11 @@ module CardGame
     end
 
     def test_new_player_with_set_hand
-      hand = Hand.new
-      player = Player.new(hand)
+      card1 = Card.new(:hearts, :ace)
+      card2 = Card.new(:spades, :ace)
+      hand = Hand.new(card1, card2)
+      player = Player.new("test player", hand)
+      
       assert_equal hand, player.hand
     end
 

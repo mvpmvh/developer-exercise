@@ -1,5 +1,4 @@
-require_relative './deck'
-require 'minitest/autorun'
+require 'test_helper'
 
 module CardGame
   class DeckTest < Minitest::Test
@@ -17,7 +16,7 @@ module CardGame
     end
     
     def test_taken_card_does_not_remain_in_deck
-      card = @deck.take
+      card = @deck.take.first
       refute @deck.cards.include?(card)
     end
 

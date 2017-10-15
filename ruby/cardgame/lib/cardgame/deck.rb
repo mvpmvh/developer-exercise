@@ -1,5 +1,3 @@
-require_relative './card'
-
 module CardGame
   class Deck
     attr_accessor :cards

@@ -28,5 +28,9 @@ module CardGame
       @name = name
       @value = NAME_VALUES[name]
     end
+
+    def ==(other)
+      self.suit == other.suit && self.name == other.name
+    end
   end
 end
