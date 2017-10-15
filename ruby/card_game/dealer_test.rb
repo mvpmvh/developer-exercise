@@ -3,12 +3,12 @@ require 'minitest/autorun'
 
 class DealerTest < Minitest::Test
   def setup
-    @dealer = Dealer.new
+    @dealer = CardGame::Dealer.new
   end
 
   def test_dealer_raises_error_if_negative_deck_count
     err = assert_raises ArgumentError do 
-      Dealer.new(-1)
+      CardGame::Dealer.new(-1)
     end
               
     assert_equal "Dealer needs at least 1 deck", err.message  
@@ -16,7 +16,7 @@ class DealerTest < Minitest::Test
 
   def test_dealer_raises_error_if_zero_deck_count
     err = assert_raises ArgumentError do 
-      Dealer.new(0)
+      CardGame::Dealer.new(0)
     end
                   
     assert_equal "Dealer needs at least 1 deck", err.message  
@@ -27,7 +27,7 @@ class DealerTest < Minitest::Test
   end
 
   def test_deal_raises_error_when_out_of_cards
-    assert_raises OutOfCardsError do 
+    assert_raises CardGame::OutOfCardsError do 
       deck = @dealer.deal!(53)
     end
   end
