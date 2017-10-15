@@ -1,7 +1,8 @@
 require_relative './deck'
 require 'minitest/autorun'
 
-class DeckTest < Minitest::Test
+module CardGame
+  class DeckTest < Minitest::Test
     def setup
       @deck = Deck.new
     end
@@ -58,3 +59,4 @@ class DeckTest < Minitest::Test
       assert_equal 52, second_deck.cards.size
     end
   end
+end

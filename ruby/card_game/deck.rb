@@ -1,6 +1,7 @@
 require './card'
 
-class Deck
+module CardGame
+  class Deck
     attr_accessor :cards
     
     def initialize
@@ -35,3 +36,4 @@ class Deck
       combined
     end
   end
+end
