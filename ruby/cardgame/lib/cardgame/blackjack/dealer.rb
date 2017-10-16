@@ -8,10 +8,27 @@ module Blackjack
   class Dealer < CardGame::Dealer
     include Blackjack::PlaysBlackjack
 
+    attr_accessor :exposed_card
+
     def initialize(total_decks = 1, strategy = Strategies::Dealer)
       super(total_decks)
       @hand = CardGame::Hand.new
       @strategy = strategy
+      @exposed_card = nil
+    end
+
+    def expose_card
+      @exposed_card = @hand.cards.first
+    end
+
+    def play_hand!
+      done = false
+      until done do
+        move = @strategy.play(self.hand_value)
+        cards = self.deal!
+        self.add_to_hand(cards.first) if move == :hit
+        done = move == :stay || self.busts?
+      end
     end
   end
 end

@@ -4,7 +4,7 @@
 module Blackjack
   module PlaysBlackjack
     include CardGame::HasHands
-    
+
     def has_blackjack?
       return false unless @hand.size == 2
       return false unless @hand.cards.any? { |card| card.name == :ace }
@@ -13,17 +13,17 @@ module Blackjack
     end
 
     def busts?
-      blackjack_value > 21
+      hand_value > 21
     end
 
-    # returns the maximum blackjack value less than 21 (if possible)
-    def blackjack_value
+    # returns the maximum hand value less than 21 (if possible)
+    def hand_value
       split = @hand.cards.partition { |card| card.name == :ace }
-      aces = split.pop
       value = split
                 .pop
                 .map { |card| card.value }
                 .reduce(:+)
+      aces = split.pop
       aces.size.times { value = value + 11 }
       aces.size.times { value = value - 10 if value > 21 }
       value

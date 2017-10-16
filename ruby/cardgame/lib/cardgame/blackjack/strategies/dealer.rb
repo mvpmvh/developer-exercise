@@ -1,7 +1,10 @@
 module Blackjack
   module Strategies
-    class Dealer
-
+    module Dealer
+      def self.play(hand_value)
+        return :stay if hand_value > 16
+        :hit
+      end
     end
   end
 end

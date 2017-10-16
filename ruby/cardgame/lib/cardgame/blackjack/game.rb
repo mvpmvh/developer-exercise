@@ -1,6 +1,6 @@
 module Blackjack
   class Game
-    attr_reader :players, :dealer, :winners
+    attr_reader :players, :dealer, :winners, :exposed_dealer_card
 
     def initialize(total_players = 1, total_decks = 1)
       valid_players = total_players.is_a?(Integer) && (1..6).include?(total_players)
@@ -14,37 +14,34 @@ module Blackjack
       setup_players(total_players)
     end
 
-    def play
-      # dealer deals 2 cards to each player
-      @players.each { |player| player.add_to_hand(@dealer.deal(2)) }
-      
-      # dealer deals 2 cards to self
-      @dealer.add_to_hand(@dealer.deal(2))
-      
-      # dealer exposes 1 of his cards to all players
-      exposed_dealer_card = @dealer.hand.cards.first
-      
+    def play!
+      @winners = []
+      @dealer.shuffle
+      deal_to_players!
+      deal_to_dealer!
+      @dealer.expose_card
+
       # TODO: implement player betting logic here...
 
       # if dealer is showing 10 - A
-      if dealer_blackjack_possible?(exposed_dealer_card)
-        @winners << dealer if @dealer.has_blackjack?
+      if dealer_blackjack_possible?(@dealer.exposed_card)
+        @winners << @dealer if @dealer.has_blackjack?
       else
         # players normally hit until blackjack, hit until 21, hit until bust, or stay
-        @players.each { |player| player.play_hand(exposed_dealer_card) }
+        @players.each { |player| player.play_hand!(@dealer) }
         
         if all_players_bust?
           @winners << @dealer
         else
           # dealer hits until at least 17
-          @dealer.play_hand
+          @dealer.play_hand!
           potential_winners = @players.reject { |player| player.busts? }
 
           if @dealer.busts?
             @winners = potential_winners
           else
             # if player scores > dealer && player score <= 21, player wins
-            @winners << potential_winners.find_all { |player| player.blackjack_value > @dealer.blackjack_value }
+            @winners << potential_winners.find_all { |player| player.hand_value > @dealer.hand_value }
             @winners << dealer if winners.empty?
           end
         end
@@ -55,7 +52,19 @@ module Blackjack
 
     def setup_players(total_players)
       @players = []
-      total_players.times { |i| @players << Player.new(i, Blackjack::Strategies::Naive.new) }
+      total_players.times { |i| @players << Player.new(i, Blackjack::Strategies::Naive) }
+    end
+
+    def deal_to_players!
+      @players.each do |player|
+        cards = @dealer.deal!(2) 
+        player.add_to_hand(*cards)
+      end
+    end
+
+    def deal_to_dealer!
+      cards = @dealer.deal!(2)
+      @dealer.add_to_hand(*cards)
     end
 
     # blackjack occurs when a 10-valued card is paired with an Ace
@@ -63,12 +72,12 @@ module Blackjack
     # this will affect how the dealer plays
     def dealer_blackjack_possible?(exposed_dealer_card)
       [
-        Card::NAME_VALUES[:ten], 
-        Card::NAME_VALUES[:jack], 
-        Card::NAME_VALUES[:queen], 
-        Card::NAME_VALUES[:king],
-        Card::NAME_VALUES[:ace]
-      ].include? exposed_dealer_card.name
+        CardGame::Card::NAME_VALUES[:ten], 
+        CardGame::Card::NAME_VALUES[:jack], 
+        CardGame::Card::NAME_VALUES[:queen], 
+        CardGame::Card::NAME_VALUES[:king],
+        CardGame::Card::NAME_VALUES[:ace]
+      ].include?(exposed_dealer_card.name)
     end
 
     def all_players_bust?

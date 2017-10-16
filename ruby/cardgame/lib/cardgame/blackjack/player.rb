@@ -14,5 +14,16 @@ module Blackjack
       super(name)
       @strategy = strategy
     end
+
+    def play_hand!(dealer)
+      done = false
+      until done do
+        # TODO: future player strategies may not care about dealer's exposed card
+        move = @strategy.play(self.hand_value, dealer.exposed_card.name)
+        cards = dealer.deal!
+        self.add_to_hand(cards.first) if move == :hit
+        done = true if move == :stay || self.busts?
+      end
+    end
   end
 end
