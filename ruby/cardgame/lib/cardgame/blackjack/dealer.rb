@@ -27,7 +27,7 @@ module Blackjack
         move = @strategy.play(self.hand_value)
         cards = self.deal!
         self.add_to_hand(cards.first) if move == :hit
-        done = move == :stay || self.busts?
+        done = true if move == :stay || self.busts?
       end
     end
   end
