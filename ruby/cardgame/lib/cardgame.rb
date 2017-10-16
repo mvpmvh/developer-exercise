@@ -1,5 +1,3 @@
-require 'pry'
-
 require 'cardgame/card'
 require 'cardgame/dealer'
 require 'cardgame/deck'

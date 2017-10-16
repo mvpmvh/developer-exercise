@@ -26,26 +26,28 @@ module Blackjack
       # if dealer is showing 10 - A
       if dealer_blackjack_possible?(@dealer.exposed_card)
         @winners << @dealer if @dealer.has_blackjack?
-      else
-        # players normally hit until blackjack, hit until 21, hit until bust, or stay
-        @players.each { |player| player.play_hand!(@dealer) }
-        
-        if all_players_bust?
-          @winners << @dealer
-        else
-          # dealer hits until at least 17
-          @dealer.play_hand!
-          potential_winners = @players.reject { |player| player.busts? }
-
-          if @dealer.busts?
-            @winners = potential_winners
-          else
-            # if player scores > dealer && player score <= 21, player wins
-            @winners << potential_winners.find_all { |player| player.hand_value > @dealer.hand_value }
-            @winners << dealer if winners.empty?
-          end
-        end
+        return
       end
+      
+      # players normally hit until blackjack, hit until 21, hit until bust, or stay
+      @players.each { |player| player.play_hand!(@dealer) }
+        
+      @winners = @players.find_all { |player| player.has_blackjack? }
+      return unless @winners.empty?
+        
+      if all_players_bust?
+        @winners << @dealer
+        return
+      end
+
+      # dealer hits until at least 17
+      @dealer.play_hand!
+      @winners = @players.reject { |player| player.busts? }
+      return if @dealer.busts?
+      
+      # if player scores > dealer && player score <= 21, player wins
+      @winners = @winners.find_all { |player| player.hand_value > @dealer.hand_value }
+      @winners << dealer if @winners.empty?
     end
 
     private
